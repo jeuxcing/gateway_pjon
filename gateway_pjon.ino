@@ -1,7 +1,5 @@
-#include <EEPROM.h>
-
-#define EEPROM_ID_ADDRESS 1
 #define TIMEOUT 5000
+#define CONNECTION_ID 42
 
 bool connected = false;
 long last_ping = 0;
@@ -13,7 +11,6 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
 }
-
 
 void loop() {
   if (!connected) {
@@ -33,7 +30,6 @@ void connection () {
   Serial.flush();
 
   connected = false;
-  char ARDUINO_ID = EEPROM.read(EEPROM_ID_ADDRESS);
 
   // Connection
   while (!connected) {
@@ -42,12 +38,12 @@ void connection () {
       String str = Serial.readString();
       int val = str.toInt();
       
-      if(val == ARDUINO_ID)
+      if(val == CONNECTION_ID)
         connected = true;
     } else {
       Serial.print("HELLO ");
-      Serial.println((uint8_t)ARDUINO_ID);
-      delay(1000);
+      Serial.println((uint8_t)CONNECTION_ID);
+      delay(500);
     }
   }
   Serial.flush();

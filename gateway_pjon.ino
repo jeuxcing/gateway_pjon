@@ -1,4 +1,10 @@
-/* serial define*/
+#include <PJONSoftwareBitBang.h>
+
+#define NET_PIN 2
+
+PJONSoftwareBitBang main_bus;
+
+
 #define TIMEOUT 5000
 #define CONNECTION_ID 42
 
@@ -11,7 +17,14 @@ char ledPin = LED_BUILTIN;
 void serial_setup() {
   Serial.begin(115200);
   pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);  
+  digitalWrite(ledPin, LOW);
+}
+
+void pjon_setup() {
+  main_bus.strategy.set_pin(NET_PIN);
+  main_bus.set_id('M');
+  main_bus.set_receiver(wire_receiver);
+  main_bus.begin();
 }
 
 void serial_loop() {
@@ -25,6 +38,10 @@ void serial_loop() {
     if (Serial.available())
       read_serial();
   }
+}
+
+void pjon_loop() {
+  main_bus.receive();
 }
 
 void connection () {
@@ -59,8 +76,6 @@ void connection () {
 
 uint8_t read_buffer[255] = {0};
 void read_serial(){
-  String str = "";
-  
   size_t message_length = Serial.read();
   Serial.readBytes(read_buffer, message_length);
 
@@ -93,10 +108,7 @@ bool pong(uint8_t* message, uint8_t length) {
 
 bool serial2pjon(uint8_t* message, uint8_t length) {
   if(connected) {
-    Serial.println(length);
-    Serial.write(message, length);
-    Serial.println(" ok");
-
+    main_bus.send_packet_blocking(message[0], message, length);
     return true;
   }
 
@@ -105,8 +117,10 @@ bool serial2pjon(uint8_t* message, uint8_t length) {
 
 void setup() {
   serial_setup();
+  pjon_setup();
 }
 
 void loop() {
   serial_loop();
+  pjon_loop();
 }

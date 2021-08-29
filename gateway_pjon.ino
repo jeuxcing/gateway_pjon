@@ -102,7 +102,9 @@ bool pong(uint8_t* message, uint8_t length) {
         connected = true;
 
         if (connected) {
-          Serial.println(pong);
+          Serial.print((uint8_t)6);
+          Serial.print(pong);
+          Serial.flush();
           last_ping = millis();
         }
 
@@ -172,14 +174,19 @@ void debug() {
   
   for (int l=0 ; l<3 ; l++) {
     msg[1] = l;
-    
+
+    /*
     for (int led=0 ; led<36 ; led++) {
       msg[2] = led;
       memcpy((msg+3), red, 3);
       uint16_t result = main_bus.send_packet_blocking('R', msg, 6);
+      main_bus.send_packet_blocking('H', msg, 6);
+      main_bus.send_packet_blocking('V', msg, 6);
       Serial.println(result);
       delay(50);
       memcpy((msg+3), black, 3);
+      main_bus.send_packet_blocking('H', msg, 6);
+      main_bus.send_packet_blocking('V', msg, 6);
       main_bus.send_packet_blocking('R', msg, 6);
     }
 
@@ -187,26 +194,35 @@ void debug() {
       msg[2] = led;
       memcpy((msg+3), red, 3);
       uint16_t result = main_bus.send_packet_blocking('H', msg, 6);
+      main_bus.send_packet_blocking('V', msg, 6);
+      main_bus.send_packet_blocking('R', msg, 6);
       Serial.println(result);
       delay(50);
       memcpy((msg+3), black, 3);
       main_bus.send_packet_blocking('H', msg, 6);
-    }
+      main_bus.send_packet_blocking('V', msg, 6);
+      main_bus.send_packet_blocking('R', msg, 6);
+    }/**/
 
     for (int led=0 ; led<48 ; led++) {
       msg[2] = led;
       memcpy((msg+3), red, 3);
       uint16_t result = main_bus.send_packet_blocking('V', msg, 6);
+      main_bus.send_packet_blocking('H', msg, 6);
+      main_bus.send_packet_blocking('R', msg, 6);
       Serial.println(result);
-      delay(50);
+      delay(100);
       memcpy((msg+3), black, 3);
       main_bus.send_packet_blocking('V', msg, 6);
+      main_bus.send_packet_blocking('H', msg, 6);
+      main_bus.send_packet_blocking('R', msg, 6);
     }
   }
 }
 
 
 void loop() {
-  serial_loop();
-  pjon_loop();
+  debug();
+  //serial_loop();
+  //pjon_loop();
 }

@@ -29,6 +29,7 @@ void setup() {
 void loop() {
     if (Serial.available())
       read_serial();
+    delay(1);
 }
 
 
@@ -65,7 +66,7 @@ void read_serial() {
 
   // Modify the packet for line coordinates
   if (buffer[1] == 'L') {
-    msg[0] = 8;
+    msg[0] = 6;
     msg[1] = 'L';
     msg[2] = buffer[3]; // Line coordinate
     msg[3] = buffer[4] * (buffer[1] == 'R' ? 12 : 24) + buffer[5]; // Led coordinate

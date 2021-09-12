@@ -24,7 +24,7 @@ void setup() {
   bus.set_id(NET_ID);
   // TODO: from 1-wire to serial
   bus.set_receiver(cmd_handler);
-}
+} 
 
 void loop() {
     if (Serial.available())

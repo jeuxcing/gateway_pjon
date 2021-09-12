@@ -46,6 +46,7 @@ void read_serial() {
     while (val == 255)
       val = Serial.read();
     // TODO: Notify synch on serial
+    digitalWrite(LED_BUILTIN,HIGH);
     return;
   }
 

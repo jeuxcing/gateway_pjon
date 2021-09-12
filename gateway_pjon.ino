@@ -1,126 +1,82 @@
 #include <PJONSoftwareBitBang.h>
 
-#define NET_PIN 2
 
-PJONSoftwareBitBang main_bus;
-
-
-#define TIMEOUT 5000
-#define CONNECTION_ID 42
-
-/* serial global variable*/
-bool connected = false;
-long last_ping = 0;
-char ledPin = LED_BUILTIN;
-
-/* serial section */
-void serial_setup() {
-  Serial.begin(115200);
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-}
-
-void pjon_setup() {
-  main_bus.strategy.set_pin(NET_PIN);
-  main_bus.set_id('M');
-  main_bus.set_receiver(wire_receiver);
-  main_bus.begin();
-}
-
-void serial_loop() {
-  if (!connected) {
-    connection();
-  } 
-  else {
-    if (millis() - last_ping > TIMEOUT)
-      connected = false;
-
-    if (Serial.available())
-      read_serial();
-  }
-}
-
-void pjon_loop() {
-  main_bus.receive();
-}
-
-void connection () {
-  Serial.flush();
-
-  connected = false;
-
-  // Connection
-  while (!connected) {
-    // Send hello using the serial port
-    if (Serial.available()) {      
-      String str = Serial.readString();
-      int val = str.toInt();
-      
-      if(val == CONNECTION_ID)
-        connected = true;
-    } else {
-      Serial.print("HELLO ");
-      Serial.println((uint8_t)CONNECTION_ID);
-      delay(500);
-    }
-  }
-  Serial.flush();
-  Serial.println("CONNECTED");
-  Serial.flush();
-
-  // turn the LED on when connected
-  digitalWrite(ledPin, HIGH);
-  last_ping = millis();
-}
+#define NET_PIN 12
+#define NET_ID 'M' /* As Main address on this 1-wire network */
 
 
-uint8_t read_buffer[255] = {0};
-void read_serial(){
-  size_t message_length = Serial.read();
-  Serial.readBytes(read_buffer, message_length);
+PJONSoftwareBitBang bus;
 
-  if(pong(read_buffer, message_length)) {}
-  else if(serial2pjon(read_buffer, message_length)) {}
-}
 
-bool pong(uint8_t* message, uint8_t length) {
-  if(length == 6) {
-    if(message[0] == 'P' &&
-       message[1] == 'I' &&
-       message[2] == 'N' &&
-       message[3] == 'G' &&
-       message[4] == ' ' &&
-       message[5] == '?') {
-        String pong = "PONG !";
-        connected = true;
-
-        if (connected) {
-          Serial.println(pong);
-          last_ping = millis();
-        }
-
-        return true;
-      } 
-  }
-
-  return false;
-}
-
-bool serial2pjon(uint8_t* message, uint8_t length) {
-  if(connected) {
-    main_bus.send_packet_blocking(message[0], message, length);
-    return true;
-  }
-
-  return false;
-}
+void cmd_handler(uint8_t * payload, uint16_t length, const PJON_Packet_Info &info);
+void read_serial();
 
 void setup() {
-  serial_setup();
-  pjon_setup();
+  // Serial Init
+  Serial.begin(115200);
+
+  // Led init
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
+  // Bus init
+  bus.strategy.set_pin(NET_PIN);
+  bus.set_id(NET_ID);
+  // TODO: from 1-wire to serial
+  bus.set_receiver(cmd_handler);
 }
 
 void loop() {
-  serial_loop();
-  pjon_loop();
+    if (Serial.available())
+      read_serial();
+}
+
+
+uint8_t buffer[254];
+
+void read_serial() {
+  int val = Serial.read();
+  // If no data return
+  if (val == -1)
+    return;
+
+  // Synchronisation data arrays (in case of packet loss)
+  if (val == 255) {
+    while (val == 255)
+      val = Serial.read();
+    // TODO: Notify synch on serial
+    return;
+  }
+
+  // Read the packet
+  buffer[0] = (uint8_t)val;
+  uint8_t idx=1;
+  while (val > 0) {
+    // TODO: Add a timeout
+    if (Serial.available()) {
+      buffer[idx++] = (uint8_t)Serial.read();
+      val -= 1;
+    } else {
+      delay(1);
+    }
+  }
+
+  uint8_t msg[16];
+
+  // Modify the packet for line coordinates
+  if (buffer[1] == 'L') {
+    msg[0] = 8;
+    msg[1] = 'L';
+    msg[2] = buffer[3]; // Line coordinate
+    msg[3] = buffer[4] * (buffer[1] == 'R' ? 12 : 24) + buffer[5]; // Led coordinate
+    // Colors
+    memcpy(msg+4, buffer+6, 3);
+  }
+
+  // Send the packet on the 1-Wire
+  bus.send_packet_blocking(msg[0], msg+1, buffer[2]);
+}
+
+void cmd_handler(uint8_t * payload, uint16_t length, const PJON_Packet_Info &info) {
+  // TODO  
 }

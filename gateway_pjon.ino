@@ -33,7 +33,16 @@ void loop() {
 }
 
 
+void debug_print(uint8_t length, uint8_t * msg) {
+  Serial.write(length);
+  for (int i=0 ; i<length ; i++)
+    Serial.write(msg[i]);
+  Serial.flush();
+}
+
+
 uint8_t buffer[254];
+uint8_t msg[16];
 
 void read_serial() {
   int val = Serial.read();
@@ -42,13 +51,13 @@ void read_serial() {
     return;
 
   // Synchronisation data arrays (in case of packet loss)
-  if (val == 255) {
-    while (val == 255)
-      val = Serial.read();
-    // TODO: Notify synch on serial
-    digitalWrite(LED_BUILTIN,HIGH);
-    return;
-  }
+  //if (val == 255) {
+  //  while (val == 255)
+  //    val = Serial.read();
+  //  // TODO: Notify synch on serial
+  //  digitalWrite(LED_BUILTIN,HIGH);
+  //  return;
+  //}
 
   // Read the packet
   buffer[0] = (uint8_t)val;
@@ -63,20 +72,30 @@ void read_serial() {
     }
   }
 
-  uint8_t msg[16];
+  //debug_print(buffer[0], buffer+1);
+  //debug_print(1, buffer+1);
 
   // Modify the packet for line coordinates
   if (buffer[1] == 'L') {
     msg[0] = 6;
     msg[1] = 'L';
     msg[2] = buffer[3]; // Line coordinate
-    msg[3] = buffer[4] * (buffer[1] == 'R' ? 12 : 24) + buffer[5]; // Led coordinate
-    // Colors
-    memcpy(msg+4, buffer+6, 3);
+    msg[3] = buffer[4] * (buffer[2] == 'R' ? 12 : 24) + buffer[5]; // Led coordinate
+    msg[4] = buffer[6];
+    msg[5] = buffer[7];
+    msg[6] = buffer[8];
   }
 
   // Send the packet on the 1-Wire
-  bus.send_packet_blocking(msg[0], msg+1, buffer[2]);
+  //debug_print(1, buffer+1);
+  //debug_print(msg[0], msg+1);
+  //uint16_t status = bus.send_packet_blocking(buffer[2], msg+1, msg[0]);
+  //debug_print(1, buffer+2);
+  //if (status == PJON_ACK) {
+    Serial.write(1);
+    Serial.write(0xFF);
+    Serial.flush();
+  //}
 }
 
 void cmd_handler(uint8_t * payload, uint16_t length, const PJON_Packet_Info &info) {

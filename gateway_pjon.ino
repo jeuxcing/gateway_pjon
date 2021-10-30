@@ -72,9 +72,6 @@ void read_serial() {
     }
   }
 
-  //debug_print(buffer[0], buffer+1);
-  //debug_print(1, buffer+1);
-
   // Modify the packet for line coordinates
   if (buffer[1] == 'L') {
     msg[0] = 6;
@@ -85,12 +82,20 @@ void read_serial() {
     msg[5] = buffer[7];
     msg[6] = buffer[8];
   }
+  // Modify packet for segment command
+  else if (buffer[1] == 'S') {
+    msg[0] = 7;
+    msg[1] = 'S';
+    msg[2] = buffer[3]; // Line coordinate
+    msg[3] = buffer[4] * (buffer[2] == 'R' ? 12 : 24) + buffer[5]; // Led start coordinate
+    msg[4] = buffer[4] * (buffer[2] == 'R' ? 12 : 24) + buffer[6]; // Led stop coordinate
+    msg[5] = buffer[7];
+    msg[6] = buffer[8];
+    msg[7] = buffer[9];
+  }
 
   // Send the packet on the 1-Wire
-  //debug_print(1, buffer+1);
-  //debug_print(msg[0], msg+1);
-  //uint16_t status = bus.send_packet_blocking(buffer[2], msg+1, msg[0]);
-  //debug_print(1, buffer+2);
+  uint16_t status = bus.send_packet_blocking(buffer[2], msg+1, msg[0]);
   //if (status == PJON_ACK) {
     Serial.write(1);
     Serial.write(0xFF);
